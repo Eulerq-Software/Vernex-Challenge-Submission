@@ -1,0 +1,90 @@
+function xlang_run_solver(solver_fn, N, Q, seed, out_path)
+%XLANG_RUN_SOLVER Run one MATLAB solver and write a JSON record to disk.
+%
+%   xlang_run_solver('enumeration_solver', 8, 2, 'none', '/tmp/ml.json')
+%
+%   Called by scripts/xlang_benchmark.sh through `matlab -batch` (or
+%   `octave --eval`). Every argument may arrive as a char array, because
+%   that is how the shell passes them, so they are converted here.
+%
+%   The solver is expected to follow the common MATLAB solver signature
+%
+%       result = solver_fn(N, Q, time_limit, seed)
+%
+%   and to return a struct with the shared SolverResult fields. Time limits
+%   are deliberately not used by this harness: [] is always passed, so the
+%   amount of computational work is identical on both sides of the
+%   comparison (see section 6.6 of the challenge document).
+%
+%   The record is written to a file rather than stdout so that MATLAB's
+%   banner, warnings, or any solver printout cannot corrupt the JSON.
+
+    if ischar(N) || isstring(N)
+        N = str2double(N);
+    end
+    if ischar(Q) || isstring(Q)
+        Q = str2double(Q);
+    end
+    if ischar(seed) || isstring(seed)
+        s = lower(strtrim(char(seed)));
+        if isempty(s) || strcmp(s, 'none') || strcmp(s, 'null') || strcmp(s, 'na')
+            seed = [];
+        else
+            seed = str2double(s);
+        end
+    end
+
+    payload = struct();
+    payload.language = 'matlab';
+    payload.solver_spec = char(solver_fn);
+    payload.N = N;
+    payload.Q = Q;
+    payload.status = 'error';
+    payload.error = '';
+
+    try
+        fh = str2func(char(solver_fn));
+
+        wall_start = tic;
+        result = fh(N, Q, [], seed);
+        wall_seconds = toc(wall_start);
+
+        q = double(result.best_phase_indices(:)');
+
+        % Independent recomputation through the shared MATLAB core.
+        recomputed = double(islr_from_phase_indices(q, Q));
+
+        valid = (numel(q) == N) && all(q >= 0) && all(q < Q) && all(q == floor(q));
+
+        payload.status = char(result.status);
+        payload.algorithm = char(result.algorithm);
+        payload.N = double(result.N);
+        payload.Q = double(result.Q);
+        if isempty(seed)
+            payload.seed = [];
+        else
+            payload.seed = double(seed);
+        end
+        payload.best_objective = double(result.best_objective);
+        payload.recomputed_objective = recomputed;
+        payload.objective_evaluations = double(result.objective_evaluations);
+        payload.runtime_seconds = double(result.runtime_seconds);
+        payload.wall_seconds = double(wall_seconds);
+        payload.best_phase_indices = q;
+        payload.valid = logical(valid);
+        payload.error = '';
+    catch err
+        payload.status = 'error';
+        payload.error = sprintf('%s: %s', err.identifier, err.message);
+    end
+
+    text = jsonencode(payload);
+
+    fid = fopen(char(out_path), 'w');
+    if fid < 0
+        error('xlang_run_solver:CannotWrite', ...
+            'Could not open %s for writing.', char(out_path));
+    end
+    fwrite(fid, text, 'char');
+    fclose(fid);
+end
