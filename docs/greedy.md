@@ -27,21 +27,17 @@ This is called the **zero-fill completion strategy**.
 - `seed`: accepted for interface compatibility. The current solver is deterministic.
 - `initial_solution`: optional valid full waveform considered as an additional incumbent solution.
 
-
-
 ## Output
 
 The solver returns a `SolverResult` containing the best valid phase-index sequence, its objective value, runtime, objective-evaluation count, status, and solver metadata.
 
-For a completed run without an initial solution, the expected number of objective evaluations is:
-
-$$1 + NQ$$
+For a completed run without an initial solution, the expected number of objective evaluations is `1 + N × Q`.
 
 The first evaluation is the all-zero initial completion, followed by `Q` candidate evaluations for each of the `N` coordinates.
 
 ## Benchmark results
 
-The following comparison used binary waveforms `Q=2`) and the supplied exhaustive enumeration solver. Runtime values are machine-dependent.
+The following comparison used binary waveforms with `Q=2` and the supplied exhaustive enumeration solver. Runtime values are machine-dependent.
 
 
 | N   | Greedy ISLR | Exact ISLR | Gap | Greedy runtime (ms) | Enumeration runtime (ms) |
@@ -49,8 +45,6 @@ The following comparison used binary waveforms `Q=2`) and the supplied exhaustiv
 | 5   | 6           | 2          | 4   | 0.936               | 1.227                    |
 | 7   | 7           | 3          | 4   | 0.688               | 3.591                    |
 | 11  | 21          | 5          | 16  | 1.072               | 96.738                   |
-
-
 
 
 ## Limitation

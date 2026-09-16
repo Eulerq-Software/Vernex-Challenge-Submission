@@ -34,59 +34,40 @@ For each iteration, the solver:
 When `record_history=True`, each iteration records:
 
 ```python
-
 {
-
     "elapsed_seconds": 0.42,
-
     "objective": 18.0,
-
 }
+```
+
+
 
 ## Evaluation counting
 
 The solver first evaluates one valid all-zero waveform as the initial best solution. Each random candidate then requires one additional ISLR evaluation.
 
-Therefore, when the solver runs for `M` random iterations, the expected total is:
+Therefore, when the solver runs for `M` random iterations, the expected total number of objective evaluations is `1 + M`.
 
-\[
-
-1 + M
-
-\]
-
-For example, with `max_iterations=1000`, the solver performs:
-
-\[
-
-1 + 1000 = 1001
-
-\]
-
-objective evaluations.
+For example, with `max_iterations=1000`, the solver performs `1 + 1000 = 1001` objective evaluations.
 
 If `max_evaluations` is set, the solver stops before exceeding that configured evaluation budget.
 
 ## Benchmark results
 
-Five seeds `11, 22, 33, 44, 55`) were run for each binary waveform instance with `Q=2` and 1,000 random candidates per seed. Enumeration provides the exact global optimum for these small instances.
+Five seeds (`11`, `22`, `33`, `44`, and `55`) were run for each binary waveform instance with `Q=2` and 1,000 random candidates per seed. Enumeration provides the exact global optimum for these small instances.
 
-| N | Exact ISLR | Best Random ISLR | Mean Random ISLR | Standard deviation | Mean Random runtime (ms) | Scores across five seeds |
 
-|---:|---:|---:|---:|---:|---:|---|
+| N   | Exact ISLR | Best Random ISLR | Mean Random ISLR | Standard deviation | Mean Random runtime (ms) | Scores across five seeds |
+| --- | ---------- | ---------------- | ---------------- | ------------------ | ------------------------ | ------------------------ |
+| 5   | 2          | 2                | 2.0              | 0.000              | 29.371                   | [2, 2, 2, 2, 2]          |
+| 7   | 3          | 3                | 3.0              | 0.000              | 27.537                   | [3, 3, 3, 3, 3]          |
+| 11  | 5          | 5                | 6.6              | 3.200              | 38.395                   | [5, 5, 13, 5, 5]         |
 
-| 5 | 2 | 2 | 2.0 | 0.000 | 29.371 | [2, 2, 2, 2, 2] |
 
-| 7 | 3 | 3 | 3.0 | 0.000 | 27.537 | [3, 3, 3, 3, 3] |
-
-| 11 | 5 | 5 | 6.6 | 3.200 | 38.395 | [5, 5, 13, 5, 5] |
-
-For `N=5` and `N=7`, all five random-search runs found the exact optimum. For `N=11`, four out of five runs found the optimum ISLR of `5`, while one run found `13`.
+For `N=5` and `N=7`, all five Random Search runs found the exact optimum. For `N=11`, four of five runs found the optimum ISLR of `5`, while one run found `13`.
 
 ## Limitation
 
 Random Search does not use information from earlier samples to construct better future samples. Each candidate is independent.
 
 It can find strong solutions with a sufficient evaluation budget, but it does not guarantee the global optimum. Result quality can vary with the random seed, especially as waveform length increases. This makes Random Search a useful stochastic baseline, but not a guaranteed optimal solver.
-```
-
