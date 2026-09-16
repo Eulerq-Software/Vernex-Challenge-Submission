@@ -95,6 +95,9 @@ def test_random_search_rejects_invalid_inputs():
 
     with pytest.raises(ValueError):
         solver.solve(N=0, Q=2)
+        
+    with pytest.raises(ValueError):
+        solver.solve(N=1, Q=2)
 
     with pytest.raises(ValueError):
         solver.solve(N=5, Q=1)

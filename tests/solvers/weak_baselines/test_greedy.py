@@ -48,9 +48,12 @@ def test_greedy_respects_immediate_time_limit():
 
 def test_greedy_rejects_invalid_inputs():
     solver = GreedySolver()
-
+    
     with pytest.raises(ValueError):
         solver.solve(N=0, Q=2)
+        
+    with pytest.raises(ValueError):
+        solver.solve(N=1, Q=2)
 
     with pytest.raises(ValueError):
         solver.solve(N=5, Q=1)

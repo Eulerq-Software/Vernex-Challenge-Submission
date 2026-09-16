@@ -9,32 +9,25 @@
 For each iteration, the solver:
 
 1. Generates a phase-index sequence of length `N`.
-
 2. Samples every phase index uniformly from `0` to `Q - 1`.
-
 3. Evaluates the candidate using `islr_from_phase_indices`.
-
 4. Replaces the current best solution only when the candidate has a lower ISLR value.
-
 5. Stops when a time limit, iteration limit, or objective-evaluation limit is reached.
+
+
 
 ## Parameters
 
-- `N`: waveform length; must be at least 1.
-
+- `N`: waveform length; must be at least 2.
 - `Q`: number of phase choices; must be at least 2.
-
 - `seed`: random seed used for reproducible runs.
-
 - `time_limit`: optional maximum runtime in seconds.
-
 - `max_iterations`: optional maximum number of randomly generated candidates.
-
 - `max_evaluations`: optional maximum number of objective-function evaluations.
-
 - `record_history`: when `True`, records best-so-far progress after every iteration.
-
 - `initial_solution`: optional valid initial waveform considered as an incumbent solution.
+
+
 
 ## History format
 
@@ -95,3 +88,5 @@ For `N=5` and `N=7`, all five random-search runs found the exact optimum. For `N
 Random Search does not use information from earlier samples to construct better future samples. Each candidate is independent.
 
 It can find strong solutions with a sufficient evaluation budget, but it does not guarantee the global optimum. Result quality can vary with the random seed, especially as waveform length increases. This makes Random Search a useful stochastic baseline, but not a guaranteed optimal solver.
+```
+

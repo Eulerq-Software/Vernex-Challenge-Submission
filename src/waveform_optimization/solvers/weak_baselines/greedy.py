@@ -26,8 +26,8 @@ class GreedySolver(Solver):
         initial_solution: list[int] | None = None,
         **kwargs: Any,
     ) -> SolverResult:
-        if N < 1:
-            raise ValueError("N must be at least 1.")
+        if N < 2:
+            raise ValueError("N must be at least 2.")
         if Q < 2:
             raise ValueError("Q must be at least 2.")
         if time_limit is not None and time_limit < 0:
