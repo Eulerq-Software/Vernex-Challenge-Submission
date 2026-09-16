@@ -5,13 +5,6 @@ function result = enumeration_solver(N, Q, time_limit, seed)
 %   result = enumeration_solver(N, Q, time_limit)
 %   result = enumeration_solver(N, Q, time_limit, seed)
 %
-%   Mirrors src/waveform_optimization/solvers/enumeration/solver.py
-%   (the EnumerationSolver.solve method). Enumeration itself is not
-%   randomized, so `seed` is accepted only so the result struct has the
-%   same fields as every other solver's result (per the shared
-%   SolverResult format in the project spec) - it does not affect the
-%   search.
-%
 %   Inputs
 %   ------
 %   N          : waveform length (positive integer)
