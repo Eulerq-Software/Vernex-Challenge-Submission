@@ -42,11 +42,7 @@ The solver returns a `SolverResult` containing the best valid phase-index sequen
 
 For a completed run without an initial solution, the expected number of objective evaluations is:
 
-\[
-
-1 + NQ
-
-\]
+$$1 + NQ$$
 
 The first evaluation is the all-zero initial completion, followed by `Q` candidate evaluations for each of the `N` coordinates.
 
@@ -55,13 +51,9 @@ The first evaluation is the all-zero initial completion, followed by `Q` candida
 The following comparison used binary waveforms `Q=2`) and the supplied exhaustive enumeration solver. Runtime values are machine-dependent.
 
 | N | Greedy ISLR | Exact ISLR | Gap | Greedy runtime (ms) | Enumeration runtime (ms) |
-
 |---:|---:|---:|---:|---:|---:|
-
 | 5 | 6 | 2 | 4 | 0.936 | 1.227 |
-
 | 7 | 7 | 3 | 4 | 0.688 | 3.591 |
-
 | 11 | 21 | 5 | 16 | 1.072 | 96.738 |
 
 ## Limitation
