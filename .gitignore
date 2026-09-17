@@ -1,0 +1,23 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build / packaging artifacts
+*.egg-info/
+build/
+dist/
+
+# Experiment / generated results
+results/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
