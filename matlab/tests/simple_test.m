@@ -1,6 +1,6 @@
 function simple_test()
     addpath('../core')
     addpath('../solvers')
-    r = enumeration_solver(10, 3, 5);
+    r = genetic_algorithm_solver(10, 3);
     disp(r);
 end
