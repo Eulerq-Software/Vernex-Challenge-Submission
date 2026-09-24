@@ -1,7 +1,9 @@
-function xlang_run_solver(solver_fn, N, Q, seed, out_path)
+function xlang_run_solver(solver_fn, N, Q, seed, out_path, params_file)
 %XLANG_RUN_SOLVER Run one MATLAB solver and write a JSON record to disk.
 %
 %   xlang_run_solver('enumeration_solver', 8, 2, 'none', '/tmp/ml.json')
+%   xlang_run_solver('genetic_algorithm_solver', 8, 2, 'none', ...
+%       '/tmp/ml.json', 'experiments/configs/ga_xlang_params.json')
 %
 %   Called by scripts/xlang_benchmark.sh through `matlab -batch` (or
 %   `octave --eval`). Every argument may arrive as a char array, because
@@ -16,9 +18,20 @@ function xlang_run_solver(solver_fn, N, Q, seed, out_path)
 %   amount of computational work is identical on both sides of the
 %   comparison (see section 6.6 of the challenge document).
 %
+%   params_file (optional): path to a JSON file of extra solver arguments
+%   (e.g. GA population_size, mutation_prob, ...). The SAME file is read
+%   by xlang_run_python_solver.py, so both languages run with identical
+%   hyperparameters. It is only forwarded to the solver function when that
+%   function actually accepts a 5th (params struct) argument - this keeps
+%   solvers like greedy_solver, whose 5th argument means something else
+%   (initial_solution), unaffected. Pass '' or omit when not needed.
+%
 %   The record is written to a file rather than stdout so that MATLAB's
 %   banner, warnings, or any solver printout cannot corrupt the JSON.
 
+    if nargin < 6
+        params_file = '';
+    end
     if ischar(N) || isstring(N)
         N = str2double(N);
     end
@@ -45,8 +58,21 @@ function xlang_run_solver(solver_fn, N, Q, seed, out_path)
     try
         fh = str2func(char(solver_fn));
 
+        params_struct = [];
+        if ~isempty(params_file)
+            raw_json = fileread(char(params_file));
+            params_struct = jsondecode(raw_json);
+            payload.params = params_struct;
+        end
+
         wall_start = tic;
-        result = fh(N, Q, [], seed);
+        % Only solvers declaring a 5th (params) argument receive it, e.g.
+        % genetic_algorithm_solver(N, Q, time_limit, seed, params).
+        if ~isempty(params_struct) && abs(nargin(fh)) >= 5
+            result = fh(N, Q, [], seed, params_struct);
+        else
+            result = fh(N, Q, [], seed);
+        end
         wall_seconds = toc(wall_start);
 
         q = double(result.best_phase_indices(:)');

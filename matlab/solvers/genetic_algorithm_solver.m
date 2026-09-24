@@ -58,9 +58,26 @@ function result = genetic_algorithm_solver(N, Q, time_limit, seed, params)
 %       population_size   (default 40)
 %       max_generations   (default 300)
 %       crossover_prob    (default 0.9)
+%       crossover_style   (default 'single_point'; 'single_point' or 'uniform')
 %       mutation_prob     (default 1/N, i.e. ~1 mutated gene/individual)
 %       tournament_size   (default 3)
 %       elite_count       (default 2)
+%
+%   CROSSOVER STYLE: single_point splits both parents at one random cut
+%   point and swaps the tails (mirrors genetic_algorithm.py's default).
+%   uniform independently swaps each gene with probability 0.5. Neither
+%   is "more correct" - which one to use is a modeling choice, which is
+%   why it is now an explicit shared parameter instead of being
+%   hard-coded differently per language.
+%
+%   MUTATION: per mutated gene, the new phase value is guaranteed to
+%   differ from the old one (drawn as old + offset, offset in
+%   [1, Q-1], mod Q) - mirrors genetic_algorithm.py exactly. An earlier
+%   version of this file redrew uniformly from {0,...,Q-1} including the
+%   old value, which silently halved the effective mutation rate at
+%   Q=2 relative to the Python side even with an identical
+%   mutation_prob. Fixed here so mutation_prob means the same thing in
+%   both languages.
 %
 %   Output
 %   ------
@@ -97,9 +114,16 @@ function result = genetic_algorithm_solver(N, Q, time_limit, seed, params)
     population_size = get_param(params, 'population_size', 40);
     max_generations = get_param(params, 'max_generations', 300);
     crossover_prob  = get_param(params, 'crossover_prob', 0.9);
+    crossover_style = get_param(params, 'crossover_style', 'single_point');
     mutation_prob   = get_param(params, 'mutation_prob', 1 / N);
     tournament_size = get_param(params, 'tournament_size', 3);
     elite_count     = get_param(params, 'elite_count', 2);
+
+    crossover_style = lower(char(crossover_style));
+    if ~ismember(crossover_style, {'single_point', 'uniform'})
+        error('genetic_algorithm_solver:BadCrossoverStyle', ...
+            'crossover_style must be ''single_point'' or ''uniform''.');
+    end
 
     if ~isscalar(population_size) || population_size < 2
         error('genetic_algorithm_solver:BadPopulationSize', ...
@@ -114,11 +138,18 @@ function result = genetic_algorithm_solver(N, Q, time_limit, seed, params)
             'tournament_size must be between 1 and population_size.');
     end
 
-    % ---- seeding (see note above re: RandStream vs global rng) ----
-    if isempty(seed)
-        rng('shuffle');
+    if exist('rng', 'builtin') == 5 || exist('rng', 'file') == 2
+        if isempty(seed)
+            rng('shuffle');
+        else
+            rng(seed);
+        end
     else
-        rng(seed);
+        if isempty(seed)
+            rand('state', sum(100 * clock));
+        else
+            rand('state', seed);
+        end
     end
 
     tic_id = tic;
@@ -170,7 +201,11 @@ function result = genetic_algorithm_solver(N, Q, time_limit, seed, params)
             parent2 = population(tournament_select(objectives, tournament_size), :);
 
             if rand() < crossover_prob
-                child = uniform_crossover(parent1, parent2);
+                if strcmp(crossover_style, 'uniform')
+                    child = uniform_crossover(parent1, parent2);
+                else
+                    child = single_point_crossover(parent1, parent2);
+                end
             else
                 child = parent1;
             end
@@ -223,12 +258,13 @@ function result = genetic_algorithm_solver(N, Q, time_limit, seed, params)
             'generations_completed', generation, ...
             'max_generations', max_generations, ...
             'crossover_prob', crossover_prob, ...
+            'crossover_style', crossover_style, ...
             'mutation_prob', mutation_prob, ...
             'tournament_size', tournament_size, ...
             'elite_count', elite_count, ...
             'selection', 'tournament', ...
-            'crossover', 'uniform', ...
-            'mutation', 'per_gene_random_reset', ...
+            'crossover', crossover_style, ...
+            'mutation', 'per_gene_guaranteed_change', ...
             'fitness_transform', 'none_direct_minimization' ...
         ) ...
     );
@@ -260,10 +296,31 @@ function child = uniform_crossover(parent1, parent2)
     child(mask) = parent2(mask);
 end
 
+function child = single_point_crossover(parent1, parent2)
+    % Mirrors genetic_algorithm.py's default crossover: one random cut
+    % point, tails swapped. point is drawn from {1, ..., n-1} (n=1 -> no
+    % valid cut, so parent1 is returned unchanged).
+    n = numel(parent1);
+    child = parent1;
+    if n > 1
+        point = randi([1, n - 1]);
+        child(point + 1:end) = parent2(point + 1:end);
+    end
+end
+
 function child = mutate(child, Q, mutation_prob)
-    mask = rand(1, numel(child)) < mutation_prob;
-    n_mutate = sum(mask);
-    if n_mutate > 0
-        child(mask) = randi([0, Q - 1], 1, n_mutate);
+    % Per mutated gene, the new value is GUARANTEED to differ from the
+    % old one: offset is drawn from {1, ..., Q-1} and added mod Q. This
+    % mirrors genetic_algorithm.py's mutate() exactly. Redrawing
+    % uniformly from {0,...,Q-1} (the previous version of this function)
+    % can silently reselect the same value - at Q=2 that means only
+    % ~half of "triggered" mutations actually change anything, so
+    % mutation_prob would not mean the same thing in both languages.
+    n = numel(child);
+    mask = rand(1, n) < mutation_prob;
+    idx = find(mask);
+    if ~isempty(idx)
+        offsets = randi([1, Q - 1], 1, numel(idx));
+        child(idx) = mod(child(idx) + offsets, Q);
     end
 end

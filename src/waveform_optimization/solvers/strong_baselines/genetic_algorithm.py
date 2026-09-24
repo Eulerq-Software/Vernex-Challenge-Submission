@@ -21,6 +21,7 @@ class GeneticAlgorithmSolver(Solver):
         population_size: int = 50,
         max_generations: int = 200,
         crossover_rate: float = 0.9,
+        crossover_style: str = "single_point",
         mutation_rate: float = 0.05,
         tournament_size: int = 3,
         elite_count: int = 2,
@@ -48,6 +49,9 @@ class GeneticAlgorithmSolver(Solver):
 
         if not (0 <= crossover_rate <= 1):
             raise ValueError("crossover_rate must be in [0, 1].")
+
+        if crossover_style not in {"single_point", "uniform"}:
+            raise ValueError("crossover_style must be 'single_point' or 'uniform'.")
 
         if not (0 <= mutation_rate <= 1):
             raise ValueError("mutation_rate must be in [0, 1].")
@@ -78,9 +82,22 @@ class GeneticAlgorithmSolver(Solver):
 
         def crossover(parent_a: list[int], parent_b: list[int]) -> tuple[list[int], list[int]]:
             if N > 1 and rng.random() < crossover_rate:
-                point = rng.randrange(1, N)
-                child_a = parent_a[:point] + parent_b[point:]
-                child_b = parent_b[:point] + parent_a[point:]
+                if crossover_style == "uniform":
+                    # Each gene independently swapped with probability
+                    # 0.5; child_b gets the complementary gene so no
+                    # information is dropped (mirrors
+                    # genetic_algorithm_solver.m's uniform_crossover,
+                    # extended to produce a second, complementary child
+                    # since this loop always fills two slots per call).
+                    child_a = list(parent_a)
+                    child_b = list(parent_b)
+                    for i in range(N):
+                        if rng.random() < 0.5:
+                            child_a[i], child_b[i] = parent_b[i], parent_a[i]
+                else:  # single_point
+                    point = rng.randrange(1, N)
+                    child_a = parent_a[:point] + parent_b[point:]
+                    child_b = parent_b[:point] + parent_a[point:]
             else:
                 child_a = list(parent_a)
                 child_b = list(parent_b)
@@ -177,6 +194,7 @@ class GeneticAlgorithmSolver(Solver):
                 "max_generations": max_generations,
                 "generations_completed": generation,
                 "crossover_rate": crossover_rate,
+                "crossover_style": crossover_style,
                 "mutation_rate": mutation_rate,
                 "tournament_size": tournament_size,
                 "elite_count": elite_count,
