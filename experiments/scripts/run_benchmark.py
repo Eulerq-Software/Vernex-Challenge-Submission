@@ -32,7 +32,7 @@ SOLVERS = {"greedy": GreedySolver, "random_search": RandomSearchSolver,
 CSV_FIELDS = ["algorithm", "N", "Q", "run_id", "seed", "time_limit_seconds",
               "runtime_seconds", "best_objective", "normalized_objective",
               "objective_evaluations", "status", "json_path",
-              "normalization_label"]
+              "normalization_label", "phase_string"]
 CSV_KEY_FIELDS = ["algorithm", "N", "Q", "run_id", "seed",
                   "time_limit_seconds"]
 
@@ -130,7 +130,20 @@ def _record_base(algorithm: str, N: int, Q: int, run_id: int, seed: int | None,
             "history": [], "solver_parameters": parameters,
             "code_revision": _code_revision(), "machine_details": _machine_details(),
             "normalization_label": "Barker reference scale",
-            "best_phase_indices": None, "validation_error": None}
+            "best_phase_indices": None, "phase_string": None,
+            "validation_error": None}
+
+
+def _phase_string(best_phase_indices: list[int], N: int, Q: int) -> str:
+    """Validate and encode a binary phase-index solution."""
+    if Q != 2:
+        raise ValueError("phase_string is only supported for Q=2.")
+    phase_string = "".join(str(index) for index in best_phase_indices)
+    if len(phase_string) != N:
+        raise ValueError("phase_string must contain exactly N characters.")
+    if any(character not in {"0", "1"} for character in phase_string):
+        raise ValueError("phase_string may contain only '0' and '1'.")
+    return phase_string
 
 
 def _compact_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -171,6 +184,25 @@ def _write_csv(csv_path: Path, records: list[dict[str, Any]]) -> None:
         writer.writeheader()
         for record in existing.values():
             writer.writerow({field: record.get(field, "") for field in CSV_FIELDS})
+
+
+def rebuild_csv_from_json(json_root: str | Path = "results/binary_baseline/raw",
+                          csv_path: str | Path = "results/binary_baseline/binary_baseline_raw_results.csv") -> list[dict[str, Any]]:
+    """Rebuild the flat CSV from saved JSON records without running solvers."""
+    root = Path(json_root)
+    records: list[dict[str, Any]] = []
+    for json_file in sorted(root.glob("**/*.json")):
+        record = json.loads(json_file.read_text(encoding="utf-8"))
+        phase_string = _phase_string(
+            record["best_phase_indices"], int(record["N"]), int(record["Q"])
+        )
+        record["phase_string"] = phase_string
+        record["json_path"] = str(json_file.relative_to(Path(csv_path).parent))
+        records.append(record)
+    csv_file = Path(csv_path)
+    csv_file.parent.mkdir(parents=True, exist_ok=True)
+    _write_csv(csv_file, records)
+    return records
 
 
 def _schedule_value(config: dict[str, Any], key: str, N: int,
@@ -233,6 +265,9 @@ def run_benchmark(config: dict[str, Any], output_root: str | Path = "results/bin
                     if scale <= 0:
                         raise ValueError("Barker reference scale must be positive.")
                     record.update(result_dict)
+                    record["phase_string"] = _phase_string(
+                        result_dict["best_phase_indices"], N, Q
+                    )
                     record["runtime_seconds"] = time.perf_counter() - started
                     record["normalized_objective"] = recomputed / ((N - 1) / 2)
                     record["normalization_label"] = "Barker reference scale"
@@ -260,7 +295,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--time-limit", type=float)
     parser.add_argument("--seed", type=int)
     parser.add_argument("--output-root", type=Path, default=Path("results/binary_baseline"))
+    parser.add_argument("--rebuild-csv", action="store_true",
+                        help="Rebuild the CSV from existing JSON files only")
     args = parser.parse_args(argv)
+    if args.rebuild_csv:
+        rebuild_csv_from_json(
+            args.output_root / "raw",
+            args.output_root / "binary_baseline_raw_results.csv",
+        )
+        return 0
     run_benchmark(load_config(args.config), output_root=args.output_root,
                   algorithms=args.algorithms.split(",") if args.algorithms else None,
                   N_values=[int(value) for value in args.N_values.split(",")] if args.N_values else None,

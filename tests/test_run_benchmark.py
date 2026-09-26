@@ -3,6 +3,8 @@ import csv
 import json
 from pathlib import Path
 
+import pytest
+
 
 
 SCRIPT = Path(__file__).parents[1] / "experiments" / "scripts" / "run_benchmark.py"
@@ -60,6 +62,7 @@ def test_smoke_run_writes_json_and_csv(tmp_path):
         rows = list(csv.DictReader(handle))
     assert len(rows) == 1
     assert rows[0]["algorithm"] == "greedy"
+    assert rows[0]["phase_string"] == saved["phase_string"]
     assert set(rows[0]) == set(run_benchmark.CSV_FIELDS)
     assert "history" not in rows[0]
     assert "best_phase_indices" not in rows[0]
@@ -131,3 +134,38 @@ def test_csv_rerun_replaces_same_budget_identity(tmp_path):
         rows = list(csv.DictReader(handle))
     assert len(rows) == 1
     assert rows[0]["time_limit_seconds"] == "0.01"
+
+
+def test_phase_string_encodes_binary_indices():
+    assert run_benchmark._phase_string([0, 1, 1, 0, 0, 1], 6, 2) == "011001"
+
+
+def test_phase_string_requires_exactly_n_binary_values():
+    with pytest.raises(ValueError):
+        run_benchmark._phase_string([0, 1], 3, 2)
+    with pytest.raises(ValueError):
+        run_benchmark._phase_string([0, 2, 1], 3, 2)
+
+
+def test_rebuild_csv_reads_json_without_running_solvers(tmp_path):
+    json_root = tmp_path / "raw" / "greedy" / "N_6" / "unlimited"
+    json_root.mkdir(parents=True)
+    json_file = json_root / "run_1.json"
+    json_file.write_text(json.dumps({
+        "algorithm": "greedy", "N": 6, "Q": 2, "run_id": 1, "seed": None,
+        "time_limit_seconds": None, "runtime_seconds": 0.1,
+        "best_objective": 5.0, "normalized_objective": 2.0,
+        "objective_evaluations": 6, "status": "completed",
+        "json_path": "old/path.json", "normalization_label": "Barker reference scale",
+        "best_phase_indices": [0, 1, 1, 0, 0, 1], "history": [],
+    }), encoding="utf-8")
+    csv_path = tmp_path / "binary_baseline_raw_results.csv"
+
+    run_benchmark.rebuild_csv_from_json(json_root=tmp_path / "raw", csv_path=csv_path)
+
+    with csv_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]["phase_string"] == "011001"
+    assert set(rows[0]) == set(run_benchmark.CSV_FIELDS)
+    saved = json.loads(json_file.read_text(encoding="utf-8"))
+    assert "phase_string" not in saved
