@@ -88,6 +88,12 @@ class ALNSConfig:
     exact_max_neighborhood_size: int = 16
 
     # --------------------------------------------------
+    # Per-repair runtime budget
+    # --------------------------------------------------
+
+    max_repair_time: float | None = 0.25
+
+    # --------------------------------------------------
     # Greedy repair
     # --------------------------------------------------
 
@@ -281,6 +287,18 @@ class ALNSConfig:
                 f"Unknown repair methods: "
                 f"{sorted(unknown_repair)}"
             )
+        
+        if self.max_repair_time is not None:
+
+            if (
+                not math.isfinite(self.max_repair_time)
+                or self.max_repair_time <= 0
+            ):
+
+                raise ValueError(
+                    "max_repair_time must be positive "
+                    "and finite, or None."
+                )
 
 
 # ============================================================
