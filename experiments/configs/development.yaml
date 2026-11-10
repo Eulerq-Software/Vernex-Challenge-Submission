@@ -1,0 +1,19 @@
+# Short local development smoke test; override with command-line flags as needed.
+algorithms:
+  - greedy
+  - random_search
+  - coordinate_descent
+N_values:
+  - 5
+  - 7
+Q: 2
+runs: 1
+seed: 42
+time_limit_seconds_by_N:
+  5: 0.05
+  7: 0.05
+runs_by_N:
+  5: 1
+  7: 1
+normalization:
+  barker_reference_scale: 1.0
