@@ -1,0 +1,57 @@
+
+Gurobi 13.0.3 (linux64) logging started Fri Sep 25 23:17:45 2026
+
+Set parameter LogFile to value "gurobi_N5.log"
+Gurobi Optimizer version 13.0.3 build v13.0.3rc0 (linux64 - "Ubuntu 24.04.4 LTS")
+
+CPU model: AMD Ryzen 9 7900X 12-Core Processor, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 12 physical cores, 24 logical processors, using up to 24 threads
+
+Non-default parameters:
+TimeLimit  30
+MIPGap  1e-06
+Seed  42
+
+Academic license 2716152 - for non-commercial use only - registered to th___@iiitd.ac.in
+Optimize a model with 40 rows, 15 columns and 120 nonzeros (Min)
+Model fingerprint: 0x745f51e9
+Model has 10 linear objective coefficients and an objective constant of 30
+Model has 20 quadratic objective terms
+Variable types: 0 continuous, 15 integer (15 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [4e+00, 2e+01]
+  QObjective range [8e+00, 2e+01]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [2e+00, 2e+00]
+
+Found heuristic solution: objective 30.0000000
+Presolve removed 16 rows and 5 columns
+Presolve time: 0.01s
+Presolved: 34 rows, 20 columns, 102 nonzeros
+Variable types: 0 continuous, 20 integer (20 binary)
+
+Root relaxation: objective -1.000000e+01, 12 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0  -10.00000    0    9   30.00000  -10.00000   133%     -    0s
+H    0     0                       2.0000000  -10.00000   600%     -    0s
+
+Cutting planes:
+  Gomory: 1
+  MIR: 2
+  Zero half: 3
+  RLT: 4
+  BQP: 1
+
+Explored 1 nodes (12 simplex iterations) in 0.02 seconds (0.00 work units)
+Thread count was 24 (of 24 available processors)
+
+Solution count 2: 2 30 
+
+Optimal solution found (tolerance 1.00e-06)
+Best objective 2.000000000000e+00, best bound 2.000000000000e+00, gap 0.0000%
+
+User-callback calls 245, time in user-callback 0.00 sec
