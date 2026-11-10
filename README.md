@@ -1,8 +1,26 @@
-# Phase-Coded Radar Waveform Optimization
+# Hybrid ALNS–Quantum Optimization for Phase-Coded Radar Waveforms
 
 **VerneX / Thales radar waveform challenge — consolidated research repository**
 
-This repository studies the design of phase-coded radar waveforms with low aperiodic autocorrelation sidelobes. It contains **implemented classical optimizers**, exact/MIQP validation, reproducible benchmark utilities, MATLAB cross-language validation, and experimental artifacts recovered from the original team branches. The primary tested scope is the **matched-filter, binary-phase problem (`Q=2`)**. Quantum and higher-phase methods are prospective directions, not validated implementations in this repository.
+**Proposed algorithm:** a hybrid **Adaptive Large Neighbourhood Search (ALNS) + quantum neighbourhood-repair solver** for radar waveform optimization. ALNS searches the complete waveform, while a quantum routine is designed to solve or sample selected smaller subproblems. Classical local refinement and full-objective evaluation determine whether the quantum-generated candidate improves the incumbent.
+
+This repository contains the **implemented classical foundation**—ALNS, other baselines, exact/constrained-MIQP validation, benchmark infrastructure and MATLAB experiments—on which that hybrid algorithm is built. The principal experimentally tested setting is the matched-filter, binary-phase problem (`Q=2`). The quantum repair algorithm is **specified in the dossier, but has not yet been implemented or benchmarked for LABS in this repository**. We propose a pathway to larger phase alphabets (`Q>2`); no quantum advantage is claimed.
+
+## Proposed solution: ALNS with quantum repair
+
+We do **not** propose to solve every large LABS instance solely on a quantum processor. A direct full-length higher-order cost Hamiltonian may be dense and expensive to compile, while a complete QUBO conversion introduces auxiliary variables and potentially difficult penalty and embedding overhead. These are **practical resource limitations**, not a proof that quantum-only algorithms are impossible.
+
+Instead, the proposed hybrid solver assigns complementary roles:
+
+1. **ALNS controls the full problem.** It initializes a candidate binary waveform, selects a subset `S` of `m << N` active bits, and freezes all remaining bits.
+2. **The selected neighbourhood is encoded exactly.** We construct the restricted higher-order Ising Hamiltonian, or its valid quadratized QUBO, including interactions with frozen variables.
+3. **Quantum repair proposes candidates.** QAOA (or a QUBO-based quantum optimizer) explores assignments to the `m` active bits. A matched-budget classical repair operator is always available as a fallback and comparator.
+4. **Classical search completes the move.** We restore the complete waveform, perform local descent, calculate the *original* LABS energy, and update the ALNS incumbent and adaptive operator scores.
+5. **Measured evidence decides whether quantum is used.** We evaluate final energy, productive basin escapes per unit time, and end-to-end resource costs—not just quantum circuit quality or low immediate subproblem energy.
+
+A specific experimental direction is **basin-trained QAOA**: use the restricted LABS Hamiltonian in the quantum circuit, but train its parameters by scoring measured candidates *after* classical descent. This avoids presuming a reversible quantum implementation of the descent algorithm and targets the productive uphill triggers observed in the classical landscape studies. The classical experiments motivate this choice; its comparative quantum performance remains to be tested.
+
+**Technical proposal:** [Algorithm Design Dossier (PDF)](docs/Algorithm_Design_Dossier.pdf) · [LaTeX source](docs/Algorithm_Design_Dossier.tex) · [Quantum execution design and status](docs/quantum_scope.md).
 
 ## Mathematical problem
 
@@ -25,7 +43,7 @@ Merit factor is `MF = N² / (2E)` for `E>0`. Lower energy / higher MF is better.
 | Adaptive large neighbourhood search (ALNS) | Implemented; benchmarking adapter and telemetry available | `src/waveform_optimization/solvers/alns/` |
 | Constrained MIQP and exactness/bound experiments (Gurobi) | Implemented; optional commercial dependency | `src/waveform_optimization/solvers/gurobi/` |
 | MATLAB implementations and cross-language experiments | Included; MATLAB tests not run in this consolidated environment | `matlab/`, `py_mtlb_efficiency/`, `results/cross_language/` |
-| Quantum QAOA / quantum annealing / SimCIM for LABS | **Not implemented in supplied Git bundle** | [Proposed design](docs/quantum_scope.md) |
+| ALNS + quantum repair (QAOA / QUBO-based alternatives) | **Proposed algorithm; quantum component not yet implemented for LABS** | [Design and status](docs/quantum_scope.md) |
 | `Q>2` extensions | Core objective supports multiple phases; most tested search algorithms are for `Q=2` | [Scope](docs/quantum_scope.md) |
 
 ## Quick start
@@ -79,7 +97,7 @@ src/waveform_optimization/
     strong_baselines/   GA, simulated annealing, Tabu, VNS
     alns/               ALNS, repair, telemetry, benchmark adapter
     gurobi/             constrained MIQP and historical outputs
-    quantum/            future-work marker (no demonstrated solver)
+    quantum/            proposed repair interface (no implemented LABS quantum solver)
   benchmarking/         benchmark result schema, validation, aggregation
   visualization/        plotting utilities
 experiments/
@@ -96,12 +114,3 @@ tests/                  Python tests
 
 This is a **merge of distinct historical contributor branches**. See [consolidation notes](docs/consolidation_notes.md) and [results catalog](docs/results_catalog.md) for branch-by-branch provenance, merge choices and known limitations. Existing Gurobi logs, benchmark CSVs and historical solver scripts remain in their original relative locations to minimize disruption to reproducibility. No new benchmark measurements are represented as historical team results.
 
-**Important:** The large later LABS landscape / guided-escape datasets described in the team's separate research discussions were **not present in the supplied Git bundle**. They must be added separately before claiming that those raw results are reproducible from this repository.
-
-## Submission guidance
-
-Use the Algorithm Design Dossier as the scientific description and link to a fixed repository commit (or a release tag) for reproducibility. This README describes what the code actually contains; it does not claim demonstrated quantum speedup, quantum hardware runs, or a validated QUBO-based LABS optimizer.
-
-## Contributors and licensing
-
-Work is credited through preserved Git history and original branch commits. **No open-source licence has been selected in the supplied repository.** Verify ownership, challenge sharing rules, permissions and any applicable IP agreements before making this repository public or adding a licence.
