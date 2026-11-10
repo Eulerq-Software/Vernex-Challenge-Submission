@@ -1,4 +1,21 @@
-.DS_Store
+# Local environments
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.pytest_cache/
+.coverage
+build/
+dist/
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
+# Generated local outputs (tracked historical data is retained)
+results/local/
+experiments/output/

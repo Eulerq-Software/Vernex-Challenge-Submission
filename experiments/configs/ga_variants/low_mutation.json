@@ -1,0 +1,9 @@
+{
+  "population_size": 50,
+  "max_generations": 200,
+  "crossover_prob": 0.9,
+  "mutation_prob": 0.01,
+  "tournament_size": 3,
+  "elite_count": 2,
+  "crossover_style": "single_point"
+}
